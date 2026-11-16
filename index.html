@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leisure Thrift</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>
+:root{--ink:#2b1a12;--cream:#f4e4c1;--paper:#fff6de;--pink:#ff8fb1;--red:#d9523f;--teal:#3f7f86;--void:#191320;
+  --pop:cubic-bezier(.2,.9,.25,1.15);
+  --checker:conic-gradient(#356f76 25%,var(--teal) 0 50%,#356f76 0 75%,var(--teal) 0) 0 0/24px 24px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--void);color:var(--cream);
+  font-family:'VT323',ui-monospace,monospace;font-size:22px;line-height:1.1}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;touch-action:none}
+
+.hud{position:fixed;inset:0 0 auto 0;display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;pointer-events:none;z-index:3}
+.logo{font-family:'Press Start 2P',monospace;font-size:14px;text-shadow:3px 3px 0 #000}
+.logo span{color:var(--pink);margin-left:.7em}
+.hint{position:fixed;left:0;right:0;bottom:14px;margin:0;text-align:center;pointer-events:none;
+  text-shadow:2px 2px 0 #000;opacity:.85;padding:0 16px;transition:opacity .4s}
+body.co .hint{opacity:0}
+
+button{font:inherit;cursor:pointer;color:var(--ink);background:var(--cream);border:3px solid var(--ink);
+  box-shadow:4px 4px 0 rgba(0,0,0,.55);padding:6px 14px;
+  transition:transform .12s,box-shadow .12s,background .2s}
+button:hover{background:var(--paper);transform:translate(-1px,-1px);box-shadow:5px 5px 0 rgba(0,0,0,.55)}
+button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 rgba(0,0,0,.55)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.hudbtns{display:flex;gap:12px;pointer-events:auto}
+.checkout h3{font-family:'Press Start 2P',monospace;font-size:11px;margin:18px 0 6px;padding-top:12px;border-top:4px double var(--ink)}
+#orders{list-style:none;margin:0;padding:0}
+#orders li{padding:6px 0;border-bottom:2px dashed var(--ink)}
+#orders small{display:block;opacity:.75;font-size:18px}
+.ohead{display:flex;justify-content:space-between;gap:8px}
+.ohead span{opacity:.7;font-size:18px}
+.bag b{display:inline-block;min-width:1.4em;margin-left:6px;background:var(--red);color:var(--paper);padding:0 5px}
+.bag.bump{animation:bump .35s var(--pop)}
+@keyframes bump{40%{transform:scale(1.25) rotate(-4deg)}}
+
+.tag{position:fixed;left:0;top:0;pointer-events:none;background:var(--ink);color:#7dffa0;z-index:2;
+  border:2px solid #39ff6a;padding:2px 8px;white-space:nowrap;opacity:0;transition:opacity .18s}
+.tag.on{opacity:1}
+
+.panel{position:fixed;right:24px;top:50%;width:300px;max-height:calc(100vh - 32px);overflow:auto;z-index:2;
+  background:var(--cream);color:var(--ink);border:4px solid var(--ink);box-shadow:8px 8px 0 rgba(0,0,0,.6);
+  padding:14px;transform:translate(130%,-50%) rotate(4deg);opacity:0;visibility:hidden;
+  transition:transform .5s var(--pop),opacity .3s,visibility 0s .5s}
+.panel.open{transform:translate(0,-50%);opacity:1;visibility:visible;transition:transform .5s var(--pop),opacity .3s}
+.close{position:absolute;right:8px;top:8px;padding:0 8px;box-shadow:2px 2px 0 rgba(0,0,0,.55);z-index:1}
+.spinbox{aspect-ratio:1;border:3px solid var(--ink);background:var(--checker);cursor:zoom-in}
+#spin{display:block;width:100%;height:100%;touch-action:none;image-rendering:pixelated}
+.spinlabel{margin:4px 0 8px;font-size:16px;opacity:.6;text-align:center;letter-spacing:1px}
+.brand{font-size:18px;letter-spacing:2px;text-transform:uppercase;color:var(--teal)}
+.panel h2{font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.5;margin:4px 0 8px}
+.price{font-size:32px;color:var(--red);border-top:2px dashed var(--ink);padding-top:4px}
+.opt{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.opt>span{font-size:18px;opacity:.7;min-width:3.2em}
+.chip{padding:0 10px;box-shadow:2px 2px 0 rgba(0,0,0,.55)}
+.chip.on{background:var(--ink);color:var(--cream)}
+.sw{display:inline-block;width:18px;height:18px;border:2px solid var(--ink);vertical-align:-3px;margin-right:6px}
+.actions{display:flex;gap:10px;margin-top:12px}
+.actions button{flex:1;font-size:22px;padding:6px 4px}
+.primary{background:var(--red);color:var(--paper)}
+.primary:hover{background:#e96a55}
+.sizes{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.sizes.open{grid-template-rows:1fr}
+.sizes>div{overflow:hidden}
+table{width:100%;border-collapse:collapse;margin-top:12px;text-align:center}
+caption{text-align:left;font-size:18px;opacity:.7;padding-bottom:2px}
+th,td{border:2px solid var(--ink);padding:1px 4px}
+th{background:var(--ink);color:var(--cream);font-weight:400}
+tr.me td{background:var(--pink)}
+
+/* enlarged 360 view */
+.zoom{position:fixed;inset:0;z-index:5;display:grid;place-content:center;justify-items:center;gap:12px;
+  background:rgba(15,10,22,.86);cursor:zoom-out;opacity:0;visibility:hidden;transition:opacity .35s,visibility 0s .35s}
+.zoom.on{opacity:1;visibility:visible;transition:opacity .35s}
+.zoombox{width:min(84vw,76vh);height:min(84vw,76vh);border:4px solid var(--ink);background:var(--checker);
+  box-shadow:10px 10px 0 rgba(0,0,0,.6);transform:scale(.55);transition:transform .45s var(--pop)}
+.zoom.on .zoombox{transform:scale(1)}
+.zoom p{margin:0;text-shadow:2px 2px 0 #000}
+.zoom img{display:block;max-width:90vw;max-height:82vh;border:4px solid var(--ink);box-shadow:10px 10px 0 rgba(0,0,0,.6);
+  transform:scale(.55) rotate(-3deg);transition:transform .45s var(--pop)}
+.zoom.on img{transform:none}
+
+/* checkout */
+.checkout{width:360px}
+.checkout h2{font-size:15px;margin:2px 0 10px}
+#coList{list-style:none;margin:0;padding:0;border-top:2px dashed var(--ink)}
+#coList li{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:2px dashed var(--ink)}
+#coList small{display:block;opacity:.7;font-size:18px}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{padding:0 7px;box-shadow:2px 2px 0 rgba(0,0,0,.55)}
+.empty{padding:18px 0;text-align:center;opacity:.7}
+.totals{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin:8px 0}
+.totals .big{font-size:30px;color:var(--red)}
+form{display:grid;gap:6px}
+label{font-size:18px;opacity:.85}
+input{display:block;width:100%;font:inherit;color:var(--ink);background:var(--paper);border:3px solid var(--ink);padding:2px 8px}
+.note{margin:4px 0;font-size:17px;opacity:.65;text-align:center}
+.wide{width:100%;font-size:24px}
+.sent{font-family:'Press Start 2P',monospace;font-size:15px;line-height:1.7;text-align:center;color:var(--teal);
+  margin:26px 0 10px;animation:pop .5s var(--pop)}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+#coDone p{text-align:center;margin:0 0 18px}
+
+.toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-30px);opacity:0;pointer-events:none;z-index:6;
+  background:var(--ink);color:var(--cream);border:3px solid var(--cream);padding:6px 16px;
+  transition:transform .35s var(--pop),opacity .25s;text-align:center;max-width:90vw}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+.intro{position:fixed;inset:0;z-index:10;background:var(--void);display:grid;place-content:center;text-align:center;gap:18px;
+  font-family:'Press Start 2P',monospace;font-size:clamp(16px,3vw,30px);transition:opacity 1.2s ease,visibility 0s 1.2s}
+.intro small{font-size:11px;color:var(--pink);animation:blink 1s steps(2) infinite}
+.intro.done{opacity:0;visibility:hidden}
+@keyframes blink{50%{opacity:0}}
+
+@media (max-width:640px){
+  .hint{display:none}
+  .panel,.checkout{right:12px;left:12px;width:auto;top:auto;bottom:12px;max-height:70vh;transform:translateY(120%)}
+  .panel.open{transform:none}
+  .spinbox{aspect-ratio:2/1}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01s!important;animation:none!important}}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<header class="hud">
+  <div class="logo">LEISURE<span>THRIFT</span></div>
+  <div class="hudbtns">
+    <button id="ordersBtn">ORDERS</button>
+    <button class="bag" id="bag">BAG<b id="bagCount">0</b></button>
+  </div>
+</header>
+<p class="hint">CLICK A PIECE TO INSPECT &middot; CLICK THE FLOOR OR USE WASD TO WALK</p>
+<div class="tag" id="tag"></div>
+
+<!-- item pop-up -->
+<aside class="panel" id="panel" aria-live="polite">
+  <button class="close" id="close" aria-label="Close">X</button>
+  <div class="spinbox" id="spinbox"><canvas id="spin"></canvas></div>
+  <div class="spinlabel">DRAG TO SPIN &middot; CLICK TO ENLARGE</div>
+  <div class="brand" id="pBrand"></div>
+  <h2 id="pName"></h2>
+  <div class="price" id="pPrice"></div>
+  <div class="opt" id="pColors"></div>
+  <div class="opt" id="pSizes"></div>
+  <div class="actions"><button id="buy" class="primary">ADD TO BAG</button><button id="sizing">SIZING</button></div>
+  <div class="sizes" id="sizes"><div><table>
+    <caption>Measurements in cm</caption>
+    <thead><tr id="sizeHead"></tr></thead>
+    <tbody id="sizeRows"></tbody>
+  </table></div></div>
+</aside>
+
+<!-- checkout -->
+<aside class="panel checkout" id="checkout">
+  <button class="close" id="coClose" aria-label="Back to store">X</button>
+  <h2>CHECKOUT</h2>
+  <div id="coBody">
+    <ul id="coList"></ul>
+    <div class="totals">
+      <span>SUBTOTAL</span><span id="coSub"></span>
+      <span>SHIPPING</span><span id="coShip"></span>
+      <span>TOTAL</span><span class="big" id="coTotal"></span>
+    </div>
+    <form id="coForm">
+      <label>NAME<input name="name" autocomplete="name"></label>
+      <label>EMAIL<input name="email" type="email" autocomplete="email"></label>
+      <label>ADDRESS<input name="address" autocomplete="street-address"></label>
+      <p class="note">DEMO STORE &middot; NO PAYMENT IS TAKEN</p>
+      <button class="primary wide" type="submit">PURCHASE</button>
+    </form>
+  </div>
+  <div id="coDone" hidden>
+    <div class="sent">PURCHASE HAS BEEN SENT!</div>
+    <p><b id="coOrder"></b><br>THANK YOU FOR SHOPPING AT LEISURE THRIFT</p>
+    <button class="wide" id="coBack">BACK TO STORE</button>
+  </div>
+  <h3 id="ordersTitle">RECENT PURCHASES</h3>
+  <ul id="orders"></ul>
+</aside>
+
+<div class="zoom" id="zoom"><div class="zoombox" id="zoombox"></div><p>DRAG TO SPIN &middot; CLICK TO CLOSE</p></div>
+<div class="zoom" id="posterView"><img src="assets/props/poster.webp" alt="Magazine page poster"><p>CLICK TO CLOSE</p></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="intro" id="intro"><div>LEISURE THRIFT</div><small>NOW LOADING...</small></div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
